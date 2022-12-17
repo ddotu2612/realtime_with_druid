@@ -25,7 +25,6 @@ kafka_p = KafkaProducer(
     value_serializer=serializer
 )
 
-
 dag =  DAG(
     dag_id='Demo',
     description="This DAG runs a full workflow for Demo druid and superset.",
