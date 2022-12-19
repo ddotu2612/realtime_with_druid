@@ -6,7 +6,7 @@ import time
 
 
 KAFKA_HOST_IP="kafka"
-TOPIC = 'topic3'
+TOPIC = 'topic01'
 
 user_ids = list(range(1, 101))
 recipient_ids = list(range(1, 101))
