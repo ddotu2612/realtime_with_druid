@@ -6,7 +6,7 @@ import time
 
 
 KAFKA_HOST_IP="kafka"
-TOPIC = 'demo1'
+TOPIC = 'topic01'
 
 user_ids = list(range(1, 101))
 recipient_ids = list(range(1, 101))
@@ -17,7 +17,7 @@ def serializer(message):
     return json.dumps(message).encode('utf-8')
 
 kafka_p = KafkaProducer(
-    bootstrap_servers = [f'{KAFKA_HOST_IP}:9094'],  
+    bootstrap_servers = [f'{KAFKA_HOST_IP}:9092'],  
     value_serializer=serializer
 )
 
@@ -46,17 +46,21 @@ def generate_message() -> dict:
 
 
 def demo_func():
-    # dummy_message = generate_message()
-    # print(dummy_message)
-    # for item in dummy_message:
-    #     # Send it to our 'messages' topic
-    #     print(f'Producing message @ {datetime.now()} | Message = {str(item)}')
-    item = {'data_id': 399, 'name': 'BTC', 'timestamp': 1671114063}
-    print(item)
-    kafka_p.send('demo1', item)
+    dummy_message = generate_message()
+    print(dummy_message)
+    for item in dummy_message:
+        # Send it to our 'messages' topic
+        # print(f'Producing message @ {datetime.now()} | Message = {str(item)}')
+        # item = {'data_id': 401, 'name': 'BTC', 'timestamp': 1671114069}
+        print(item)
+        kafka_p.send(TOPIC, item)
+        time.sleep(1)
     print('sucesss')
 
-while True:
+count = 0
+while count < 100:
     demo_func()
-    break
+    count += 1
     # time.sleep(60)
+
+# demo_func()
