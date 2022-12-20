@@ -17,22 +17,56 @@ dates = [(date.strftime('%d/%m/%Y')) for date in dates]
 print(dates)
 
 # print(datetime.strptime(from_date, '%d/%m/%Y') + timedelta(days=1))
+list_df = []
 
 def gen_data(day, code):
     print(day + " - " + code)
     df = pd.DataFrame(columns=["ticker", "time", "close", "open", "high", "low", "volume"])
+
+    len_cur = len(list_df)
+    df_last = list_df[len_cur-1] if len_cur > 0 else 100
+    close_last = df_last['close'][0] if len_cur > 0 else df_last
+
+    max = close_last * 1.07
+    min = close_last * 0.93
+    print(close_last, min, max)
+
+    # day
+    ticker = code
+    time = day
+    open = round(random.uniform(min, max), 2)
+    # random low price
+    while 1:
+        x = round(random.uniform(min, max), 2)
+        if x <= open:
+            break
+    low = x
+    # random high price
+    while 1:
+        y = round(random.uniform(min, max), 2)
+        if y >= open:
+            break
+    high = y
+    # random close price
+    while 1:
+        z = round(random.uniform(min, max), 2)
+        if z >= low and z <= high:
+            break
+    close = z
+    print(ticker, time, close, open, high, low, ' HIHI')
+
     df = pd.concat([df, pd.DataFrame.from_records([{
-        "ticker": code,
-        "time": day,
-        "close": random.randint(50, 1440),
-        "open": random.randint(50, 1440),
-        "high": random.randint(50, 1440),
-        "low": random.randint(50, 1440),
-        "volume": random.randint(1000, 500000000)
+        "ticker": ticker,
+        "time": time,
+        "close": close,
+        "open": open,
+        "high": high,
+        "low": low,
+        "volume": round(random.uniform(1000, 500000000), 2)
     }])])
 
     return df
-list_df = []
+
 for code in codes:
     for date in dates:
         df = gen_data(date, code)
