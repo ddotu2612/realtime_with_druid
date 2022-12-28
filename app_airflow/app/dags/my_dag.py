@@ -4,7 +4,7 @@ from datetime import datetime
 
 ######################### Config DAG
 default_args = {'owner': 'airflow',
-                'start_date': datetime(2022, 1, 1),
+                'start_date': datetime(2022, 12, 19),
                 }
 
 dag = DAG("trigger_producer",
