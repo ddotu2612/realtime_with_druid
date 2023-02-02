@@ -8,6 +8,7 @@ volumes:
   coordinator_var: {}
   router_var: {}
   druid_shared: {}
+  app_mysql: {}
 
 services:
 
@@ -139,13 +140,13 @@ services:
     env_file:
       - ./app_druid/environment
 
-  # Superset Demo need change to superset latest on production
-  superset:
-    image: amancevice/superset:1.4.1
-    container_name: superset
-    restart: unless-stopped
-    ports:
-      - 8088:8088
+  # # Superset Demo need change to superset latest on production
+  # superset:
+  #   image: amancevice/superset:1.4.1
+  #   container_name: superset
+  #   restart: unless-stopped
+  #   ports:
+  #     - 8088:8088
     
 
   # Airflow sequency need change to celery on product
@@ -173,100 +174,21 @@ services:
     volumes:
       - ./app_redis:/data
 
-  # # Druid Cordinator
-  # coordinator:
-  #   image: duynguyenngoc/druid:v1.0.0
-  #   container_name: coordinator
-  #   restart: unless-stopped
-  #   volumes:
-  #     - druid_shared:/opt/shared
-  #     - coordinator_var:/opt/druid/var
-  #   ports:
-  #     - "8081:8081"
-  #   command:
-  #     - coordinator
-  #   depends_on:
-  #     - zookeeper
-  #     - postgres
-  #   env_file:
-  #     - ./app_druid/environment
-
-
-  # # Druid Broker
-  # broker:
-  #   image: duynguyenngoc/druid:v1.0.0
-  #   container_name: broker
-  #   restart: unless-stopped
-  #   volumes:
-  #     - broker_var:/opt/druid/var
-  #   ports:
-  #     - "8082:8082"
-  #   command:
-  #     - broker
-  #   depends_on: 
-  #     - zookeeper
-  #     - postgres
-  #     - coordinator
-  #   env_file:
-  #      - ./app_druid/environment
-
-
-  # # Druid Historical
-  # historical:
-  #   image: duynguyenngoc/druid:v1.0.0
-  #   container_name: historical
-  #   restart: unless-stopped
-  #   volumes:
-  #     - druid_shared:/opt/shared
-  #     - historical_var:/opt/druid/var
-  #   ports:
-  #     - "8083:8083"
-  #   command:
-  #     - historical
-  #   depends_on: 
-  #     - zookeeper
-  #     - postgres
-  #     - coordinator
-  #   env_file:
-  #     - ./app_druid/environment
-
-
-  # # Druid middlemanager
-  # middlemanager:
-  #   image: duynguyenngoc/druid:v1.0.0
-  #   container_name: middlemanager
-  #   volumes:
-  #     - druid_shared:/opt/shared
-  #     - middle_var:/opt/druid/var
-  #   ports:
-  #     - "8091:8091"
-  #     - "8100-8105:8100-8105"
-  #   command:
-  #     - middleManager
-  #   depends_on: 
-  #     - zookeeper
-  #     - postgres
-  #     - coordinator
-  #   env_file:
-  #     - ./app_druid/environment
-  
-
-  # # Druid router
-  # router:
-  #   image: duynguyenngoc/druid:v1.0.0
-  #   container_name: router
-  #   restart: unless-stopped
-  #   volumes:
-  #     - router_var:/opt/druid/var
-  #   ports:
-  #     - "8888:8888"
-  #   command:
-  #     - router
-  #   depends_on: 
-  #     - zookeeper
-  #     - postgres
-  #     - coordinator
-  #   env_file:
-  #     - ./app_druid/environment
-
+  # mysql
+  mysql:
+    image: mysql:8.0
+    cap_add: 
+      - SYS_NICE
+    container_name: mysql
+    restart: unless-stopped
+    ports:
+      - "3380:3306"
+    environment:
+      - MYSQL_DATABASE=stockalert
+      - MYSQL_ROOT_PASSWORD=tudv
+      - MYSQL_USER=tudv
+      - MYSQL_PASSWORD=tu123
+    volumes:
+      - app_mysql:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
 
