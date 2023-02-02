@@ -10,3 +10,6 @@ app_redis/*
 
 airflow.db
 superset.db
+
+# Use this token to access the HTTP API:
+# 5856080361:AAEslvvgLI_-mkJia-lnVG2Sc78a-nFlUJg
