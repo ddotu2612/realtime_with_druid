@@ -25,17 +25,18 @@ def crawler():
     # list ticker
     codes = listing_companies()['ticker'].tolist()
     print(len(codes)) # 1631 ticker
+   
+    # get historical stock data from start_date to end_date
+    now = datetime.now()
+    yes = datetime.now() - timedelta(days=1)
+    now_str = now.strftime("%Y-%m-%d")
+    yes_str = yes.strftime("%Y-%m-%d")
+    start_date =  yes_str
+    end_date = now_str
 
+    print(f"Start crawl data in date {now_str}")
     list_df = []
     for code in codes:
-        # get historical stock data from start_date to end_date
-        now = datetime.now()
-        yes = datetime.now() - timedelta(days=1)
-        now_str = now.strftime("%Y-%m-%d")
-        yes_str = yes.strftime("%Y-%m-%d")
-
-        start_date =  yes_str
-        end_date = now_str
         try:
             df = stock_historical_data(symbol=code, start_date=start_date, end_date=end_date)
         except:
@@ -49,31 +50,34 @@ def crawler():
         print('done ticker ', code)
     
     df_all = pd.concat(list_df, ignore_index=True)
+    df_all.to_csv('stock_crawl_new_full.csv', index=False)
 
     return df_all
 
-# create message to send to Kafka
-def generate_message():
-    df = crawler() # dataframe store historical data in current day
+crawler()
 
-    df['timestamp'] = pd.to_datetime(df['TradingDate'],format= '%Y-%m-%d').values.astype(np.int64) // 10 ** 9
-    # df['date_convert'] = [datetime.fromtimestamp(x) for x in df['timestamp']]
-    # lis = df.values.tolist()
-    out = df.to_json(orient='records', lines=True).split('\n')
-    # print(df)
-    # print(out)
-    return out
+# # create message to send to Kafka
+# def generate_message():
+#     df = crawler() # dataframe store historical data in current day
 
-def send_messages_kafka():
-    dummy_message = generate_message()
-    print(type(dummy_message))
-    for item in dummy_message:
-        item = json.loads(item)
-        # print(item)
-        # Send it to our 'messages' topic
-        print(f'Producing message @ {datetime.now()} | Message = {str(item)}')
-        kafka_p.send(TOPIC, item)
+#     df['timestamp'] = pd.to_datetime(df['TradingDate'],format= '%Y-%m-%d').values.astype(np.int64) // 10 ** 9
+#     # df['date_convert'] = [datetime.fromtimestamp(x) for x in df['timestamp']]
+#     # lis = df.values.tolist()
+#     out = df.to_json(orient='records', lines=True).split('\n')
+#     # print(df)
+#     # print(out)
+#     return out
+
+# def send_messages_kafka():
+#     dummy_message = generate_message()
+#     print(type(dummy_message))
+#     for item in dummy_message:
+#         item = json.loads(item)
+#         # print(item)
+#         # Send it to our 'messages' topic
+#         print(f'Producing message @ {datetime.now()} | Message = {str(item)}')
+#         kafka_p.send(TOPIC, item)
 
 # while True:
-send_messages_kafka()
+# send_messages_kafka()
     # time.sleep(60)
