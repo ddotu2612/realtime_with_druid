@@ -48,10 +48,10 @@ druid_host = 'localhost'
 druid_port = 8082
 
 # alert message
-GT_MESSAGE = "Thông báo {}: {} đã trên ngưỡng của bạn!!\nGiá hiện tại: {}"
-LT_MESSAGE = "Thông báo {}: {} đã duới ngưỡng của bạn!!\nGiá hiện tại: {}"
+GT_MESSAGE = "Thông báo {}: {} đã trên ngưỡng của bạn {} %!!\nGiá hiện tại: {}"
+LT_MESSAGE = "Thông báo {}: {} đã duới ngưỡng của bạn {} %!!\nGiá hiện tại: {}"
 
 # attributes to set alerts on
-ATTR_BUTTON = [["PRICE", "RSI"], ["MA20", "MA50"], ["MACD"]]
-ATTR = ["PRICE", "RSI", "MA20", "MA50", "MACD"]
-DIRECTION_BUTTON = [["less than", "greater than"]]
+ATTR_BUTTON = [["PRICE", "VOLUME"], ["OBV", "RSI"], ["MACD"]]
+ATTR = ["PRICE", "VOLUME", "OBV", "RSI", "MACD"]
+DIRECTION_BUTTON = [["less", "greater"]]

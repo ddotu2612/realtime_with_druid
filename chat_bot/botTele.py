@@ -105,6 +105,7 @@ class Bot():
         select_query = "SELECT * FROM stockalert"
         self.cursor.execute(select_query)
         conditions = self.cursor.fetchall()
+        print(conditions)
         if conditions is None:
             return
         for condition in conditions:
@@ -136,14 +137,14 @@ class Bot():
             message = configs.NO_CONDITION_MESSAGE
             logging.info(f"List condition at chat id {str(chat_id)}: Did not find any condition")
         else:
-            message = "Your alert condition: \n"
+            message = "Các điều kiện nhận cảnh báo bạn đã thiết lập: \n"
             for row in rows:
                 (chat_id, ticker, indicator, threshold, direction) = row
                 message = message + "\nTicker " + ticker.upper()
                 if direction == 0: 
-                    message = message + f" has lower boundary on {indicator}: " + str(threshold)
+                    message = message + f" có ngưỡng dưới trên chỉ báo {indicator} là: " + str(threshold)
                 if direction == 1: 
-                    message = message +  f" has upper boundary: {indicator}: " + str(threshold)
+                    message = message +  f" có ngưỡng trên trên chỉ báo {indicator} là: " + str(threshold)
         await context.bot.send_message(chat_id=chat_id, text=message)
         logging.info(f"List condition at chat id {chat_id}: Success")
 
@@ -151,7 +152,7 @@ class Bot():
     async def add_condition(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data.clear()
         context.user_data['command'] = "ADD"
-        await update.message.reply_text("Select technical indicator to set condition on", 
+        await update.message.reply_text("Chọn loại chỉ báo để thiết lập điều kiện trên đó", 
                 reply_markup=ReplyKeyboardMarkup(configs.ATTR_BUTTON, one_time_keyboard=True, resize_keyboard=True))
         return ADD_SYMBOL
 
@@ -159,10 +160,10 @@ class Bot():
         text = update.message.text
         if text.upper() in configs.ATTR:
             context.user_data['tech_indi'] = text.upper()
-            await update.message.reply_text("Select the stock code to set condition on")
+            await update.message.reply_text("Chọn mã chứng khoán để thiết lập điều kiện trên đó")
             return ADD_DIRECTION
         else:
-            await update.message.reply_text("Sorry, I didn't understand this technical indicator yet :<\nTry some others", 
+            await update.message.reply_text("Hệ thống hiện không hỗ trợ chỉ báo này :<\nHãy thử lại", 
                 reply_markup=ReplyKeyboardMarkup(configs.ATTR_BUTTON, one_time_keyboard=True, resize_keyboard=True))
             return ADD_SYMBOL
 
@@ -170,11 +171,11 @@ class Bot():
         text = update.message.text
         if text.upper() in configs.TICKERS:
             context.user_data['symbol'] = text
-            await update.message.reply_text("Select the direction to send alert: ",
+            await update.message.reply_text("Chọn hướng muốn theo dõi ngưỡng: ",
                     reply_markup=ReplyKeyboardMarkup(configs.DIRECTION_BUTTON, one_time_keyboard=True, resize_keyboard=True))
             return ADD_THRESHOLD
         else:
-            await update.message.reply_text("I am not support this stock yet :<\nTry some others")
+            await update.message.reply_text("Hệ thống hiện không hỗ trợ mã chứng khoán này :<\nHãy thử lại")
             return ADD_DIRECTION
 
     async def add_threshold(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -182,36 +183,36 @@ class Bot():
         ticker = context.user_data['symbol']
         indicator = context.user_data['tech_indi']
         chat_id = update.effective_chat.id
-        if text== "greater than":
+        if text== "greater":
             context.user_data['direction'] = 1
             direction = 1
             select_query = "SELECT * FROM stockalert WHERE chat_id = %s and ticker = %s and indicator = %s and direction = %s"
             self.cursor.execute(select_query, (str(chat_id), ticker, indicator, direction))
             row = self.cursor.fetchone()
             if row is None:
-                msg = f"Okay send alert when {context.user_data['tech_indi']} is {text} ... how much? Enter the threshold to complete the condition"
+                msg = f"Hệ thống gửi 1 cảnh báo khi {context.user_data['tech_indi']} lớn hơn ... bao nhiêu? Nhập một ngưỡng để hoàn thành điều kiện"
                 await update.message.reply_text(msg)
                 return EXEC_ADD_COMMAND
             else:
-                msg = f"You have set this condition with threshold: {row[3]}"
+                msg = f"Bạn đã thiết lập điều kiện này với một ngưỡng là: {row[3]}"
                 await context.bot.send_message(chat_id=chat_id, text=msg)
                 return END_CONVERSATION
-        elif text == "less than":
+        elif text == "less":
             context.user_data['direction'] = 0
             direction = 0
             select_query = "SELECT * FROM stockalert WHERE chat_id = %s and ticker = %s and indicator = %s and direction = %s"
             self.cursor.execute(select_query, (str(chat_id), ticker, indicator, direction))
             row = self.cursor.fetchone()
             if row is None:
-                msg = f"Okay send alert when {context.user_data['tech_indi']} is {text} ... how much? Enter the threshold to complete the condition"
+                msg = f"Hệ thống gửi 1 cảnh báo khi {context.user_data['tech_indi']} bé hơn ... bao nhiêu? Nhập một ngưỡng để hoàn thành điều kiện"
                 await update.message.reply_text(msg)
                 return EXEC_ADD_COMMAND
             else:
-                msg = f"You have set this condition with threshold: {row[3]}"
+                msg = f"Bạn đã thiết lập điều kiện này với một ngưỡng là: {row[3]}"
                 await context.bot.send_message(chat_id=chat_id, text=msg)
                 return END_CONVERSATION
         else:
-            await update.message.reply_text("Wrong direction! Please use the two button below or type in \"less than\"/\"greater than\" in the chat.",
+            await update.message.reply_text("Lỗi rồi! Hãy chọn 1 trong 2 phím bên dưới hoặc nhập \"less\"/\"greater\" trong chat",
                     reply_markup=ReplyKeyboardMarkup(configs.DIRECTION_BUTTON,  one_time_keyboard=True, resize_keyboard=True))
             return ADD_THRESHOLD
 
@@ -230,12 +231,12 @@ class Bot():
                 self.r.zadd(f"{indicator}:{ticker}:gt", {chat_id: threshold})
             else:
                 self.r.zadd(f"{indicator}:{ticker}:lt", {chat_id: threshold})
-            message = "Alert added successfully! Use /list to see all your alert"
+            message = "Thêm cảnh báo thành công. Sử dụng /list để xem tất cả cảnh báo"
             logging.info(f"User added condition at chat id {chat_id}: Success -- Detail: {ticker} - {indicator} - {configs.DIRECTION_BUTTON[0][direction]} - {threshold}")
             await context.bot.send_message(chat_id=chat_id, text=message)
             return END_CONVERSATION
         else:
-            await update.message.reply_text("I do not understand, the threshold should be a float number")
+            await update.message.reply_text("Ngưỡng nên là một số thập phân cho chính xác nhất")
             return EXEC_ADD_COMMAND
 # ------------------------------- end of add conversation ---------------------------------------------------
 
@@ -249,7 +250,7 @@ class Bot():
         self.cursor.execute(select_query, (str(chat_id),))
         rows = self.cursor.fetchall()
         if rows is None:
-            await context.bot.send_message(chat_id=chat_id, text="You have not set up any condition yet.")
+            await context.bot.send_message(chat_id=chat_id, text="Bạn chưa từng thiết lập một điều kiện nào")
             return END_CONVERSATION
         else:
             context.user_data['list_symbol'] = []
@@ -264,14 +265,14 @@ class Bot():
                 context.user_data['list_symbol'].append(row[0])
             if len(b) != 0:
                 buttons.append(b)
-            await update.message.reply_text("Which stock do you want to update condition",
+            await update.message.reply_text("Mã chứng khoán nào bạn muốn cập nhật cảnh báo",
                     reply_markup=ReplyKeyboardMarkup(buttons,  one_time_keyboard=True, resize_keyboard=True))
             return UPDATE_SYMBOL
 
     async def update_symbol(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text.strip().upper()
         if text not in context.user_data['list_symbol']:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"You have not set up any condition on {text} yet.")
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Bạn chưa từng thiết lập cảnh báo nào trên mã {text}")
             return END_CONVERSATION
         else:
             context.user_data['symbol'] = text.upper()
@@ -290,7 +291,7 @@ class Bot():
                 context.user_data['list_indi'].append(row[0])
             if len(b) != 0:
                 buttons.append(b)
-            await update.message.reply_text(f"Which indicator on {text.upper()} do you want to update condition",
+            await update.message.reply_text(f"Loại chỉ báo bạn muốn cập nhật điều kiện trên mã {text.upper()} là ?",
                     reply_markup=ReplyKeyboardMarkup(buttons,  one_time_keyboard=True, resize_keyboard=True))
             return UPDATE_INDICATOR
 
@@ -307,7 +308,7 @@ class Bot():
                     b = []
             if len(b) != 0:
                 buttons.append(b)
-            await update.message.reply_text(f"Hmm, Seems like {text.upper()} do not have condition on {text}. Try using buttons below", 
+            await update.message.reply_text(f"Chỉ báo {text.upper()} không có điều kiện trên mã {text}. Thử chọn 1 trong số chỉ báo bên dưới", 
                     reply_markup=ReplyKeyboardMarkup(buttons,  one_time_keyboard=True, resize_keyboard=True))
             return UPDATE_INDICATOR
         context.user_data['tech_indi'] = text
@@ -326,7 +327,7 @@ class Bot():
             context.user_data['list_direction'].append(configs.DIRECTION_BUTTON[0][row[0]])
         if len(b) != 0:
                 buttons.append(b)
-        await update.message.reply_text(f"Which direction on {text} of {context.user_data['symbol']} do you want to update condition", 
+        await update.message.reply_text(f"Loại hướng trên chỉ báo {text} của mã {context.user_data['symbol']} mà bạn muốn cập nhật điều kiện?", 
                 reply_markup=ReplyKeyboardMarkup(buttons,  one_time_keyboard=True, resize_keyboard=True))
         return UPDATE_THRESHOLD
 
@@ -336,14 +337,14 @@ class Bot():
         indicator = context.user_data['tech_indi']
         chat_id = update.effective_chat.id
         if text not in context.user_data['list_direction']:
-            await update.message.reply_text("Seems like you have not set up condition like that! Please use the button(s) below or type in \"less than\"/\"greater than\" in the chat.",
+            await update.message.reply_text("Bạn chưa thiết lập điều kiện như thế này!Hãy chọn button bên dưới hoăc nhập \"less\"/\"greater\" trong chat",
                     reply_markup=ReplyKeyboardMarkup(configs.DIRECTION_BUTTON,  one_time_keyboard=True, resize_keyboard=True))
             return UPDATE_THRESHOLD
-        if text == "greater than":
+        if text == "greater":
             context.user_data['direction'] = 1
         else:
             context.user_data['direction'] = 0
-        msg = f"Finally, enter the threshold to complete the update process"
+        msg = f"Cuối cùng, nhập ngưỡng để hoàn thành quá trình cập nhật"
         await update.message.reply_text(msg)
         return EXEC_UPDATE_COMMAND
         
@@ -364,12 +365,12 @@ class Bot():
             else:
                 self.r.zrem(f"{indicator}:{ticker}:lt", chat_id)
                 self.r.zadd(f"{indicator}:{ticker}:lt", {chat_id: threshold})
-            message = "Alert updated successfully! Use /list to see all your alert"
+            message = "Cập nhật thành công! Sử dụng /list để xem tất cả cảnh báo của bạn"
             logging.info(f"User updated condition at chat id {chat_id}: Success -- Detail: {ticker} - {indicator} - {configs.DIRECTION_BUTTON[0][direction]} - {threshold}")
             await context.bot.send_message(chat_id=chat_id, text=message)
             return END_CONVERSATION
         else:
-            await update.message.reply_text("I do not understand, the threshold should be a float number")
+            await update.message.reply_text("Ngưỡng nên là một số thập phân cho chính xác nhất")
             return EXEC_UPDATE_COMMAND
 # ------------------------------- end of update conversation ---------------------------------------------------
 
@@ -383,7 +384,7 @@ class Bot():
         self.cursor.execute(select_query, (str(chat_id),))
         rows = self.cursor.fetchall()
         if rows is None:
-            await context.bot.send_message(chat_id=chat_id, text="You have not set up any condition yet.")
+            await context.bot.send_message(chat_id=chat_id, text="Bạn chưa thiết lập điều kiện cảnh báo nào")
             return END_CONVERSATION
         else:
             context.user_data['list_symbol'] = []
@@ -398,14 +399,14 @@ class Bot():
                 context.user_data['list_symbol'].append(row[0])
             if len(b) != 0:
                 buttons.append(b)
-            await update.message.reply_text("Which stock do you want to remove condition",
+            await update.message.reply_text("Mã chứng khoán mà bạn muốn xóa điều kiện cảnh báo",
                     reply_markup=ReplyKeyboardMarkup(buttons,  one_time_keyboard=True, resize_keyboard=True))
             return REMOVE_SYMBOL
 
     async def remove_symbol(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text.strip().upper()
         if text not in context.user_data['list_symbol']:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"You have not set up any condition on {text} yet.")
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Bạn chưa từng thiết lập điều kiện trên mã chứng khoán {text}")
             return END_CONVERSATION
         else:
             context.user_data['symbol'] = text.upper()
@@ -424,7 +425,7 @@ class Bot():
                 context.user_data['list_indi'].append(row[0])
             if len(b) != 0:
                 buttons.append(b)
-            await update.message.reply_text(f"Which indicator on {text.upper()} do you want to remove condition",
+            await update.message.reply_text(f"Loại chỉ báo mà bạn muốn xóa điều kiện trên mã {text.upper()}?",
                     reply_markup=ReplyKeyboardMarkup(buttons,  one_time_keyboard=True, resize_keyboard=True))
             return REMOVE_INDICATOR
 
@@ -441,7 +442,7 @@ class Bot():
                     b = []
             if len(b) != 0:
                 buttons.append(b)
-            await update.message.reply_text(f"Hmm, Seems like {text.upper()} do not have condition on {text}. Try using buttons below", 
+            await update.message.reply_text(f"Chỉ báo {text.upper()} không có điều kiện trên mã chứng khoán {context.user_data['symbol']}", 
                     reply_markup=ReplyKeyboardMarkup(buttons,  one_time_keyboard=True, resize_keyboard=True))
             return REMOVE_INDICATOR
         context.user_data['tech_indi'] = text
@@ -460,7 +461,7 @@ class Bot():
             context.user_data['list_direction'].append(configs.DIRECTION_BUTTON[0][row[0]])
         if len(b) != 0:
                 buttons.append(b)
-        await update.message.reply_text(f"Which direction on {text} of {context.user_data['symbol']} do you want to remove condition", 
+        await update.message.reply_text(f"Loại hướng trên chỉ báo {text} của mã chứng khoán {context.user_data['symbol']} mà bạn muốn xóa điều kiện (lớn hoặc bé hơn)", 
                 reply_markup=ReplyKeyboardMarkup(buttons,  one_time_keyboard=True, resize_keyboard=True))
         return EXEC_REMOVE_COMMAND
     
@@ -477,17 +478,17 @@ class Bot():
                     b = []
             if len(b) != 0:
                 buttons.append(b)
-            await update.message.reply_text(f"Hmm, Seems like {text.upper()} is invalid or these is no condition. Try using buttons below", 
+            await update.message.reply_text(f"Hướng {text.upper()} không hợp lệ. Chọn phím bên dưới", 
                     reply_markup=ReplyKeyboardMarkup(buttons,  one_time_keyboard=True, resize_keyboard=True))
             return EXEC_REMOVE_COMMAND
         else:
             ticker = context.user_data['symbol']
             indicator = context.user_data['tech_indi']
-            direction = 0 if text == "less than" else 1
+            direction = 0 if text == "less" else 1
             delete_query = f"DELETE FROM stockalert WHERE chat_id = {str(update.effective_chat.id)} AND ticker = '{ticker}' and indicator = '{indicator}' and direction = {direction}"
             self.cursor.execute(delete_query)
             self.connection.commit()
-            message = "Alert removed successfully! Use /list to see all your alert"
+            message = "Cảnh báo được xóa thành công! Sử dụng /list để xem tất cả các cảnh báo"
             logging.info(f"User remove condition at chat id {str(update.effective_chat.id)}: Success -- Detail: {ticker} - {indicator} - {configs.DIRECTION_BUTTON[0][direction]}")
             if direction == 1:
                 self.r.zrem(f"{indicator}:{ticker}:gt", update.effective_chat.id)
@@ -508,11 +509,11 @@ class Bot():
             self.cursor.execute(delete_condition_query)
             self.connection.commit()
             logging.info("Remove user info from db successfully")
-        message = "Bye have a good time"
+        message = "Tạm biệt bạn"
         await context.bot.send_message(chat_id=chat_id, text=message)
 
     async def command_unknown(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I didn't understand that command.")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Tôi không hiểu lệnh này của bạn")
 
 
 if __name__ == '__main__':

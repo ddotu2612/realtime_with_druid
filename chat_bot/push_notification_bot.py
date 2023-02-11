@@ -59,6 +59,7 @@ class PushNotificationBot():
         for message in messages:
             ticker, cur = message
             print(ticker, cur)
+            # print(f'alert:{topic.upper()}:{ticker}:gt')
             # prev = self.r.get(f"{topic}:{ticker}")
 
             # if prev is None:
@@ -87,9 +88,18 @@ class PushNotificationBot():
             msg = configs.LT_MESSAGE
         else:
             msg = configs.GT_MESSAGE
-        print(chat_ids)
+        print('chat_ids', chat_ids)
         for chat_id in chat_ids:
-            text_msg = msg.format(ticker, indicator, cur_value)
+            select_query = "SELECT threshold FROM stockalert WHERE chat_id = %s and ticker = %s and indicator = %s and direction = %s"
+            self.cursor.execute(select_query, (chat_id.decode('utf-8'), ticker, indicator, direction))
+            row = self.cursor.fetchone()
+            if row is None:
+                continue
+            # print(row)
+            threshold = row[0]
+            # print(threading)
+            percent = round(abs(threshold - cur_value) * 100 / threshold, 2)
+            text_msg = msg.format(ticker, indicator, percent, cur_value)
             print(text_msg)
             print(type(chat_id), chat_id)
             await self.bot.send_message(chat_id=chat_id.decode('utf-8'), text=text_msg)
