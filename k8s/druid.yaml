@@ -1,0 +1,198 @@
+apiVersion: "druid.apache.org/v1alpha1"
+kind: "Druid"
+metadata:
+  name: druid-cluster
+spec:
+  image: apache/druid:0.21.1
+  # Optionally specify image for all nodes. Can be specify on nodes also
+  # imagePullSecrets:
+  # - name: tutu
+  startScript: /druid.sh
+  podLabels:
+    environment: stage
+    release: alpha
+  podAnnotations:
+    dummykey: dummyval
+  readinessProbe:
+    httpGet:
+      path: /status/health
+      port: 8088
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+    runAsGroup: 1000
+  services:
+    - spec:
+        type: ClusterIP
+        clusterIP: None
+  commonConfigMountPath: "/opt/druid/conf/druid/cluster/_common"
+  jvm.options: |-
+    -server
+    -XX:MaxDirectMemorySize=10240g
+    -Duser.timezone=UTC
+    -Dfile.encoding=UTF-8
+    -Dlog4j.debug
+    -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
+    -Djava.io.tmpdir=/druid/data
+  log4j.config: |-
+    <?xml version="1.0" encoding="UTF-8" ?>
+    <Configuration status="WARN">
+        <Appenders>
+            <Console name="Console" target="SYSTEM_OUT">
+                <PatternLayout pattern="%d{ISO8601} %p [%t] %c - %m%n"/>
+            </Console>
+        </Appenders>
+        <Loggers>
+            <Root level="info">
+                <AppenderRef ref="Console"/>
+            </Root>
+        </Loggers>
+    </Configuration>
+  common.runtime.properties: |
+    # Zookeeper
+    druid.zk.service.host=tiny-cluster-zk
+    druid.zk.paths.base=/druid
+    druid.zk.service.compress=false
+    # Metadata Store
+    #druid.metadata.storage.type=derby
+    #druid.metadata.storage.connector.connectURI=jdbc:derby://localhost:1527//druid/data/derbydb/metadata.db;create=true
+    #druid.metadata.storage.connector.host=localhost
+    #druid.metadata.storage.connector.port=1527
+    #druid.metadata.storage.connector.createTables=true
+    druid.metadata.storage.type=postgresql
+    druid.metadata.storage.connector.connectURI=jdbc:postgresql://my-release-postgresql:5432/druid
+    druid.metadata.storage.connector.host=my-release-postgresql
+    druid.metadata.storage.connector.port=5432
+    druid.metadata.storage.connector.createTables=true
+    druid.metadata.storage.connector.user=postgres
+    druid.metadata.storage.connector.password=password
+    # Deep Storage
+    druid.storage.type=s3
+    druid.storage.bucket=test-druid-1
+    druid.storage.baseKey=druid/segments
+    #
+    # Extensions
+    #
+    druid.extensions.loadList=["druid-kafka-indexing-service", "druid-s3-extensions", "postgresql-metadata-storage"]
+    #
+    # Service discovery
+    #
+    druid.selectors.indexing.serviceName=druid/overlord
+    druid.selectors.coordinator.serviceName=druid/coordinator
+    druid.indexer.logs.type=s3
+    druid.indexer.logs.s3Bucket=<s3 bucket>
+    druid.indexer.logs.s3Prefix=druid/indexing-logs
+    druid.segmentCache.locations=[{"path":"/druid/data/segment-cache","maxSize":10737418240}]
+    druid.indexer.logs.directory=/druid/data/indexing-logs
+    druid.lookup.enableLookupSyncOnStartup=false
+  volumeMounts:
+    - mountPath: /druid/data
+      name: data-volume
+  volumes:
+    - name: data-volume
+      emptyDir: {}
+  env:
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: AWS_REGION
+      value: < Key in your AWS S3 bucket location >
+    - name: AWS_ACCESS_KEY_ID
+      value: < Key in your AWS ACCESS KEY here >
+    - name: AWS_SECRET_ACCESS_KEY
+      value: < Key in your AWS SECRET KEY here > 
+
+  nodes:
+    brokers:
+      # Optionally specify for running broker as Deployment
+      # kind: Deployment
+      nodeType: "broker"
+      # Optionally specify for broker nodes
+      # imagePullSecrets:
+      # - name: tutu
+      druid.port: 8088
+      nodeConfigMountPath: "/opt/druid/conf/druid/cluster/query/broker"
+      replicas: 1
+      resources:
+        requests:
+          cpu: 1
+          memory: 2Gi
+      runtime.properties: |
+        druid.service=druid/broker
+        # HTTP server threads
+        druid.broker.http.numConnections=50
+        druid.server.http.numThreads=60
+        # Processing threads and buffers
+        druid.processing.buffer.sizeBytes=500MiB
+        druid.processing.numMergeBuffers=4
+        druid.processing.numThreads=1
+        druid.sql.enable=true
+        druid.server.http.defaultQueryTimeout=3000000
+      extra.jvm.options: |-
+        -Xmx2G
+        -Xms2G
+    coordinators:
+      # Optionally specify for running coordinator as Deployment
+      # kind: Deployment
+      nodeType: "coordinator"
+      druid.port: 8088
+      nodeConfigMountPath: "/opt/druid/conf/druid/cluster/master/coordinator-overlord"
+      replicas: 1
+      runtime.properties: |
+        druid.service=druid/coordinator
+        # HTTP server threads
+        druid.coordinator.startDelay=PT30S
+        druid.coordinator.period=PT30S
+        # Configure this coordinator to also run as Overlord
+        druid.coordinator.asOverlord.enabled=true
+        druid.coordinator.asOverlord.overlordService=druid/overlord
+        druid.indexer.queue.startDelay=PT30S
+        druid.indexer.runner.type=local
+      extra.jvm.options: |-
+        -Xmx512M
+        -Xms512M
+    historicals:
+      nodeType: "historical"
+      druid.port: 8088
+      nodeConfigMountPath: "/opt/druid/conf/druid/cluster/data/historical"
+      replicas: 1
+      runtime.properties: |
+        druid.service=druid/historical
+        druid.server.http.numThreads=5
+        druid.processing.buffer.sizeBytes=536870912
+        druid.processing.numMergeBuffers=1
+        druid.processing.numThreads=1
+        druid.historical.cache.useCache=true
+        druid.historical.cache.populateCache=true
+        druid.server.http.defaultQueryTimeout=3000000
+        # Segment storage
+        druid.segmentCache.locations=[{\"path\":\"/druid/data/segment-cache\",\"maxSize\":100737418240}]
+        druid.server.maxSize=100737418240
+      extra.jvm.options: |-
+        -Xmx512M
+        -Xms512M
+    routers:
+      nodeType: "router"
+      druid.port: 8088
+      nodeConfigMountPath: "/opt/druid/conf/druid/cluster/query/router"
+      replicas: 1
+      runtime.properties: |
+        druid.service=druid/router
+        # HTTP proxy
+        druid.router.http.numConnections=10
+        druid.router.http.readTimeout=PT5M
+        druid.router.http.numMaxThreads=10
+        druid.server.http.numThreads=10
+        # Service discovery
+        druid.router.defaultBrokerServiceName=druid/broker
+        druid.router.coordinatorServiceName=druid/coordinator
+        # Management proxy to coordinator / overlord: required for unified web console.
+        druid.router.managementProxy.enabled=true       
+      extra.jvm.options: |-
+        -Xmx512M
+        -Xms512M

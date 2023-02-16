@@ -1,3 +1,17 @@
 # Thay đổi context tới docker-desktop 
  kubectl config get-contexts
  kubectl config use-context docker-desktop
+
+ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+curl http://localhost:8989/metrics | findstr /V "#" | findstr /C:"druid_"
+
+[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("cHJvbS1vcGVyYXRvcg=="))
+
+ kubectl get pods tiny-cluster-zk-0 -n druid -o jsonpath='{.status.podIP}:{.spec.containers[0].ports[0].containerPort}'
+
+    druid.extensions.loadList=["druid-kafka-indexing-service"]
+    # druid.kafka.internal.host=kafka-service.kafka.svc.cluster.local
+    # druid.kafka.internal.port=9092
+    # druid.kafka.internal.kafkaconsumer.zookeeper.connect=zookeeper-service.kafka.svc.cluster.local:2181
+    # druid.kafka.internal.kafkaconsumer.bootstrap.servers=kafka-broker.kafka.svc.cluster.local:9092

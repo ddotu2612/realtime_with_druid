@@ -9,7 +9,7 @@ import numpy as np
 from vnstock import *
 
 KAFKA_HOST_IP="localhost"
-TOPIC = 'test2'
+TOPIC = 'test'
 
 # Messages will be serialized as JSON 
 def serializer(message):
@@ -79,7 +79,7 @@ def send_messages_kafka():
         # Send it to our 'messages' topic
         print(f'Producing message @ {datetime.now()} | Message = {str(item)}')
         kafka_p.send(TOPIC, item)
-        time.sleep(0.003)
+        time.sleep(0.03)
 
 # while True:
 send_messages_kafka()
