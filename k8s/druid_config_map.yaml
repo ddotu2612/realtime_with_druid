@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: druid-coordinator-config
+  namespace: druid
+data:
+  runtime.properties: |
+    druid.zk.service.host=tiny-cluster-zk-0.tiny-cluster-zk
+    druid.kafka.broker.connect=kafka-service.kafka.svc.cluster.local:9092

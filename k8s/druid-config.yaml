@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: druid-config
+  namespace: druid
+data:
+  common.runtime.properties: |
+    druid.metadata.storage.type=zookeeper
+    druid.metadata.storage.connector.connectURI=zookeeper-service.kafka:2181
+    druid.metadata.storage.connector.path=/druid/metadata
+    druid.zk.service.host=zookeeper-service.kafka:2181
+    druid.kafka.internal.servers=kafka-service.kafka:9092
