@@ -24,8 +24,12 @@
 
 import json
 
-f = open('json.txt')
+f = open('IonXpress_081_HGVS_variant.json')
 
 data = json.load(f)
 
-print(data)
+for i in data:
+    print(i.*.)
+    # for j in i:
+    #     print(i[j]["hgvsg"])
+    break
