@@ -47,14 +47,14 @@ class Bot():
                 self.cursor = connection.cursor(buffered=True)
                 self.cursor.execute("select database();")
                 record = self.cursor.fetchone()
-                print(f"Database connnected: {record}")
+                print(f"Database connected: {record}")
             else:
-                print('No connect to mysql')
+                print('Không kết nối được tới mysql')
         except Error as e:
-            logging.error("Error while connecting to MySQL:\n" + e)
+            logging.error("Lỗi kết nối MySQL:\n" + e)
         
         self.r = redis.Redis()
-        logging.info("Connected to Redis")
+        logging.info("Đã kết nối được tới Redis")
         self.load_mysql_to_redis()
 
         add_conv_handler = ConversationHandler(
@@ -118,24 +118,24 @@ class Bot():
         
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
-        logging.info(f"Start command at chat: {str(chat_id)}")
+        logging.info(f"Bắt đầu nhận lệnh từ chat_id: {str(chat_id)}")
         await context.bot.send_message(chat_id=chat_id, text=configs.WELCOME_MESSAGE)
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
-        logging.info(f"Help command at chat: {str(chat_id)}")
+        logging.info(f"Command /help tại chat_id: {str(chat_id)}")
         await context.bot.send_message(chat_id=chat_id, text=configs.HELP_MESSAGE)
 
     async def list_condition(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
-        logging.info(f"List condition command at chat: {str(chat_id)}")
+        logging.info(f"Danh sách điều kiện của chat_id: {str(chat_id)}")
         select_query = "SELECT * FROM stockalert WHERE chat_id = %s"
         self.cursor.execute(select_query, (str(chat_id),))
         rows = self.cursor.fetchall()
         
         if rows is None or len(rows) == 0: 
             message = configs.NO_CONDITION_MESSAGE
-            logging.info(f"List condition at chat id {str(chat_id)}: Did not find any condition")
+            logging.info(f"Danh sách điều kiện của người dùng với chat_id {str(chat_id)}: Không có điều kiện nào")
         else:
             message = "Các điều kiện nhận cảnh báo bạn đã thiết lập: \n"
             for row in rows:
@@ -146,9 +146,9 @@ class Bot():
                 if direction == 1: 
                     message = message +  f" có ngưỡng trên trên chỉ báo {indicator} là: " + str(threshold)
         await context.bot.send_message(chat_id=chat_id, text=message)
-        logging.info(f"List condition at chat id {chat_id}: Success")
+        logging.info(f"Liệt kê danh sách điều kiện tại chat_id {chat_id}: Thành công")
 
-# ----------------------------------- start of add conversation------------------------------------------------------------
+# Thêm điều kiện
     async def add_condition(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data.clear()
         context.user_data['command'] = "ADD"
@@ -232,16 +232,14 @@ class Bot():
             else:
                 self.r.zadd(f"{indicator}:{ticker}:lt", {chat_id: threshold})
             message = "Thêm cảnh báo thành công. Sử dụng /list để xem tất cả cảnh báo"
-            logging.info(f"User added condition at chat id {chat_id}: Success -- Detail: {ticker} - {indicator} - {configs.DIRECTION_BUTTON[0][direction]} - {threshold}")
+            logging.info(f"Người dùng thêm điều kiện tại {chat_id}: Thành công -- Chi tiết: {ticker} - {indicator} - {configs.DIRECTION_BUTTON[0][direction]} - {threshold}")
             await context.bot.send_message(chat_id=chat_id, text=message)
             return END_CONVERSATION
         else:
             await update.message.reply_text("Ngưỡng nên là một số thập phân cho chính xác nhất")
             return EXEC_ADD_COMMAND
-# ------------------------------- end of add conversation ---------------------------------------------------
 
-
-# ------------------------------- start of update conversation ---------------------------------------------
+# Update điều kiện
     async def update_condition(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data.clear()
         context.user_data['command'] = 'UPDATE'
@@ -366,16 +364,15 @@ class Bot():
                 self.r.zrem(f"{indicator}:{ticker}:lt", chat_id)
                 self.r.zadd(f"{indicator}:{ticker}:lt", {chat_id: threshold})
             message = "Cập nhật thành công! Sử dụng /list để xem tất cả cảnh báo của bạn"
-            logging.info(f"User updated condition at chat id {chat_id}: Success -- Detail: {ticker} - {indicator} - {configs.DIRECTION_BUTTON[0][direction]} - {threshold}")
+            logging.info(f"Người dùng cập nhật điều kiện vs chat_id {chat_id}: Thành công -- Detail: {ticker} - {indicator} - {configs.DIRECTION_BUTTON[0][direction]} - {threshold}")
             await context.bot.send_message(chat_id=chat_id, text=message)
             return END_CONVERSATION
         else:
             await update.message.reply_text("Ngưỡng nên là một số thập phân cho chính xác nhất")
             return EXEC_UPDATE_COMMAND
-# ------------------------------- end of update conversation ---------------------------------------------------
 
 
-# ------------------------------- start of remove conversation ---------------------------------------------
+# Xóa một điều kiện
     async def remove_condition(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data.clear()
         context.user_data['command'] = 'DELETE'
@@ -489,15 +486,15 @@ class Bot():
             self.cursor.execute(delete_query)
             self.connection.commit()
             message = "Cảnh báo được xóa thành công! Sử dụng /list để xem tất cả các cảnh báo"
-            logging.info(f"User remove condition at chat id {str(update.effective_chat.id)}: Success -- Detail: {ticker} - {indicator} - {configs.DIRECTION_BUTTON[0][direction]}")
+            logging.info(f"Người dùng xóa điều kiện có char_id {str(update.effective_chat.id)}: thành công -- Chi tiết: {ticker} - {indicator} - {configs.DIRECTION_BUTTON[0][direction]}")
             if direction == 1:
                 self.r.zrem(f"{indicator}:{ticker}:gt", update.effective_chat.id)
             else:
                 self.r.zrem(f"{indicator}:{ticker}:lt", update.effective_chat.id)
             await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
             return END_CONVERSATION
-# -------------------------------------- end of remove conversation --------------------------------------
 
+# Hủy nhận cảnh báo
     async def cancel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
         logging.info(f"Stop receiving alert from chat: {chat_id}")
@@ -508,7 +505,7 @@ class Bot():
             delete_condition_query = f"DELETE FROM user_alert_condition WHERE chat_id = {str(chat_id)}"
             self.cursor.execute(delete_condition_query)
             self.connection.commit()
-            logging.info("Remove user info from db successfully")
+            logging.info("Xóa thông tin người dùng từ DB thành công!")
         message = "Tạm biệt bạn"
         await context.bot.send_message(chat_id=chat_id, text=message)
 
