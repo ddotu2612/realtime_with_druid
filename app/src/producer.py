@@ -5,11 +5,15 @@ from kafka import KafkaProducer
 import time
 import pandas as pd
 import numpy as np
-
 from vnstock import *
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
+KAFKA_BOOTSTRAP_SERVER = os.getenv('KAFKA_BOOTSTRAP_SERVER')
 # KAFKA_HOST_IP=   
-TOPIC = 'test2'
+TOPIC = 'data'
+kafka_servers = [KAFKA_BOOTSTRAP_SERVER]
 
 # Messages will be serialized as JSON 
 def serializer(message):
@@ -17,7 +21,7 @@ def serializer(message):
 
 kafka_p = KafkaProducer(
     # bootstrap_servers = [f'{KAFKA_HOST_IP}:9094'], 
-    bootstrap_servers = ["kafka-0.kafka-headless.default.svc.cluster.local:9092","kafka-1.kafka-headless.default.svc.cluster.local:9092"], # connect kafka in k8s   
+    bootstrap_servers = kafka_servers, # connect kafka in k8s   
     value_serializer=serializer
 )
 
@@ -50,7 +54,7 @@ def crawler():
         list_df.append(df)
 #         print('done ticker ', code)
     
-#     df_all = pd.concat(list_df, ignore_index=True)
+    df_all = pd.concat(list_df, ignore_index=True)
 #     df_all.to_csv('stock_crawl_new_full.csv', index=False)
 
     return df_all

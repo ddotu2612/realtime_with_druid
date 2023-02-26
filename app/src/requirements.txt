@@ -1,5 +1,5 @@
-kafka-python==2.0.2
-vnstock==22.3.1
+kafka-python
+vnstock
 pandas
 requests
 mysql-connector-python
@@ -7,3 +7,4 @@ python-telegram-bot
 redis
 pydruid
 SQLAlchemy
+python-dotenv
