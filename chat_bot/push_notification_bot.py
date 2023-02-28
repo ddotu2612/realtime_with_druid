@@ -20,7 +20,7 @@ from pydruid.db import connect
 # import read_data_druid
 
 
-class PushNotificationBot():
+class SendAlert():
     def __init__(self, consumer_configs=None) -> None:
         try: 
             connection = mysql.connector.connect(
@@ -46,15 +46,15 @@ class PushNotificationBot():
         self.bot = telegram.Bot(token=configs.TOKEN)
 
 
-    async def consume(self):
+    async def read_data(self):
         query_stock_sql = """select * from datastock where TradingDate = '2023-01-27'"""
         df = pd.DataFrame(self.curs.execute(query_stock_sql))
         res_close = df[["ticker", "Close"]].values
         res_volume = df[["ticker", "Close"]].values
         print(res_close)                
-        await self.process_messages(res_close, "PRICE")
+        await self.processMessages(res_close, "PRICE")
 
-    async def process_messages(self, messages, topic):
+    async def processMessages(self, messages, topic):
         print(len(messages))
         for message in messages:
             ticker, cur = message
@@ -108,5 +108,5 @@ class PushNotificationBot():
         self.r.quit()
 
 if __name__ == "__main__":
-    bot = PushNotificationBot()
-    asyncio.run(bot.consume())
+    bot = SendAlert()
+    asyncio.run(bot.read_data())

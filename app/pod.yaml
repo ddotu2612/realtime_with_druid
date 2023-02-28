@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: producer-kafka
+  labels:
+    name: producer-kafka
+spec:
+  containers:
+    - name: producer-kafka
+      image: tuantoquq/producer-kafka:1.0.2
+      resources:
+        limits:
+          memory: "128Mi"
+          cpu: "500m"
+      env:
+        - name: "KAFKA_BOOTSTRAP_SERVER"
+          value: "kafka.default.svc.cluster.local:9092"
+      ports:
+        - containerPort: 5000

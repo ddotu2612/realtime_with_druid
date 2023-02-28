@@ -3,64 +3,85 @@ import random
 import json
 from kafka import KafkaProducer
 import time
+import pandas as pd
+import numpy as np
+from vnstock import *
 
 
-KAFKA_HOST_IP="kafka"
-TOPIC = 'topic01'
-
-user_ids = list(range(1, 101))
-recipient_ids = list(range(1, 101))
-
+KAFKA_BOOTSTRAP_SERVER = "kafka.default.svc.cluster.local:9092"
+# KAFKA_HOST_IP=   
+TOPIC = 'data'
+kafka_servers = [KAFKA_BOOTSTRAP_SERVER]
 
 # Messages will be serialized as JSON 
 def serializer(message):
     return json.dumps(message).encode('utf-8')
 
 kafka_p = KafkaProducer(
-    bootstrap_servers = [f'{KAFKA_HOST_IP}:9092'],  
+    # bootstrap_servers = [f'{KAFKA_HOST_IP}:9094'], 
+    bootstrap_servers = kafka_servers, # connect kafka in k8s   
     value_serializer=serializer
 )
 
-# Create Message sample
-def generate_message() -> dict:
-    random_user_id = random.choice(user_ids)
-    # Copy the recipients array
-    recipient_ids_copy = recipient_ids.copy()
-    # User can't send message to himself
-    recipient_ids_copy.remove(random_user_id)
-    # random_recipient_id = random.choice(recipient_ids_copy)
-    list_name = ["BTC", "ETH", "BTT", "DOT"]
-    end = []
-    time_now = int(datetime.utcnow().timestamp())
-    for item in list_name:
-        if item == "BTC": data = random.randint(10, 400)
-        elif item == 'ETH': data = random.randint(10, 250)
-        elif item == 'DOT': data = random.randint(40, 170)
-        else: data = random.randint(10, 40)
-        end.append({
-            "data_id" : data,
-            "name": item,
-            "timestamp": time_now
-        })
-    return end
+# # crawler historical data in current day
+def crawler():
+    # list ticker
+    codes = listing_companies()['ticker'].tolist()
+    print(len(codes)) # 1631 ticker
+   
+    # get historical stock data from start_date to end_date
+    now = datetime.now()- timedelta(days=3)
+    yes = datetime.now() - timedelta(days=4)
+    now_str = now.strftime("%Y-%m-%d")
+    yes_str = yes.strftime("%Y-%m-%d")
+    start_date =  yes_str
+    end_date = now_str
 
+    print(f"Start crawl data in date {now_str}")
+    list_df = []
+    for code in codes[0:10]:
+        
+        try:
+            df = stock_historical_data(symbol=code, start_date=start_date, end_date=end_date)
+        except:
+            continue
 
-def demo_func():
+        df['ticker'] = code
+        cols = df.columns.tolist()
+        cols = cols[-1:] + cols[-2:-1] + cols[:-2]
+        df = df[cols]
+        list_df.append(df)
+#         print('done ticker ', code)
+        print(code)
+    
+    df_all = pd.concat(list_df, ignore_index=True)
+#     df_all.to_csv('stock_crawl_new_full.csv', index=False)
+
+    return df_all
+
+def generate_message():
+    df = crawler() # dataframe store historical data in current day
+    # df = pd.read_csv(r'D:\DE\realtime_with_druid\crawl\stock_crawl_new_full.csv')
+
+    df['timestamp'] = pd.to_datetime(df['TradingDate'],format= '%Y-%m-%d').values.astype(np.int64) // 10 ** 9
+    # df['date_convert'] = [datetime.fromtimestamp(x) for x in df['timestamp']]
+    # lis = df.values.tolist()
+    out = df.to_json(orient='records', lines=True).split('\n')
+    # print(df)
+    # print(out)
+    return out
+
+def send_messages_kafka():
     dummy_message = generate_message()
-    print(dummy_message)
-    for item in dummy_message:
-        # Send it to our 'messages' topic
-        # print(f'Producing message @ {datetime.now()} | Message = {str(item)}')
-        # item = {'data_id': 401, 'name': 'BTC', 'timestamp': 1671114069}
+    print(type(dummy_message))
+    for item in dummy_message[0:10]:
         print(item)
+        item = json.loads(item)
+        # print(item)
+        # Send it to our 'messages' topic
+        print(f'Producing message @ {datetime.now()} | Message = {str(item)}')
         kafka_p.send(TOPIC, item)
-        time.sleep(1)
-    print('sucesss')
+        time.sleep(0.03)
 
-count = 0
-while count < 100:
-    demo_func()
-    count += 1
-    # time.sleep(60)
-
-# demo_func()
+if __name__=='__main__':
+    send_messages_kafka()

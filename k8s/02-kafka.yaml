@@ -4,6 +4,7 @@ metadata:
   labels:
     app: kafka-broker
   name: kafka-service
+  namespace: kafka
 spec:
   ports:
   - port: 9092
@@ -16,6 +17,7 @@ metadata:
   labels:
     app: kafka-broker
   name: kafka-broker
+  namespace: kafka
 spec:
   replicas: 1
   selector:
@@ -30,13 +32,16 @@ spec:
       containers:
       - env:
         - name: KAFKA_BROKER_ID
-          value: "100"
+          value: "1"
         - name: KAFKA_ZOOKEEPER_CONNECT
-          value:  10.106.104.73:2181
+          value: 10.106.118.191:2181
         - name: KAFKA_LISTENERS
           value: PLAINTEXT://:9092
         - name: KAFKA_ADVERTISED_LISTENERS
           value: PLAINTEXT://kafka-broker:9092
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: PLAINTEXT://kafka-service.kafka.svc.cluster.local:9092
+          # value: 
         image: wurstmeister/kafka
         imagePullPolicy: IfNotPresent
         name: kafka-broker

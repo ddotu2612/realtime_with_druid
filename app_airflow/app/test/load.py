@@ -5,31 +5,33 @@ from kafka import KafkaProducer
 import time
 import pandas as pd
 import numpy as np
-
 from vnstock import *
 
-# KAFKA_HOST_IP="localhost"
-# TOPIC = 'test1'
 
-# # Messages will be serialized as JSON 
-# def serializer(message):
-#     return json.dumps(message).encode('utf-8')
+# KAFKA_BOOTSTRAP_SERVER = "kafka.default.svc.cluster.local:9092"
+# # KAFKA_HOST_IP=   
+TOPIC = 'datastock'
+# kafka_servers = [KAFKA_BOOTSTRAP_SERVER]
 
-# kafka_p = KafkaProducer(
-#     # bootstrap_servers = [f'{KAFKA_HOST_IP}:9094'], 
-#     bootstrap_servers = [f'{KAFKA_HOST_IP}:9092'], # connect kafka in k8s   
-#     value_serializer=serializer
-# )
+# Messages will be serialized as JSON 
+def serializer(message):
+    return json.dumps(message).encode('utf-8')
 
-# crawler historical data in current day
+kafka_p = KafkaProducer(
+    bootstrap_servers = [f'kafka:9092'], 
+    # bootstrap_servers = kafka_servers, # connect kafka in k8s   
+    value_serializer=serializer
+)
+
+# # crawler historical data in current day
 def crawler():
     # list ticker
     codes = listing_companies()['ticker'].tolist()
     print(len(codes)) # 1631 ticker
    
     # get historical stock data from start_date to end_date
-    now = datetime.now() - timedelta(days=1)
-    yes = datetime.now() - timedelta(days=2)
+    now = datetime.now()
+    yes = datetime.now() - timedelta(days=1)
     now_str = now.strftime("%Y-%m-%d")
     yes_str = yes.strftime("%Y-%m-%d")
     start_date =  yes_str
@@ -38,6 +40,7 @@ def crawler():
     print(f"Start crawl data in date {now_str}")
     list_df = []
     for code in codes[311:500]:
+        
         try:
             df = stock_historical_data(symbol=code, start_date=start_date, end_date=end_date)
         except:
@@ -48,16 +51,14 @@ def crawler():
         cols = cols[-1:] + cols[-2:-1] + cols[:-2]
         df = df[cols]
         list_df.append(df)
-        print('done ticker ', code)
+#         print('done ticker ', code)
+        print(code)
     
     df_all = pd.concat(list_df, ignore_index=True)
-    # df_all.to_csv('stock_crawl_new_full.csv', index=False)
+#     df_all.to_csv('stock_crawl_new_full.csv', index=False)
 
     return df_all
 
-# crawler()
-
-# # create message to send to Kafka
 def generate_message():
     df = crawler() # dataframe store historical data in current day
     # df = pd.read_csv(r'D:\DE\realtime_with_druid\crawl\stock_crawl_new_full.csv')
@@ -72,17 +73,15 @@ def generate_message():
 
 def send_messages_kafka():
     dummy_message = generate_message()
-    # print(dumm)
-    print(len(dummy_message))
-    for item in dummy_message:
+    # print(type(dummy_message))
+    for item in dummy_message[0:-1]:
         print(item)
         item = json.loads(item)
-        print(item)
+        # print(item)
         # Send it to our 'messages' topic
-        # print(f'Producing message @ {datetime.now()} | Message = {str(item)}')
-        # kafka_p.send(TOPIC, item)
-        # time.sleep(0.03)
+        print(f'Producing message @ {datetime.now()} | Message = {str(item)}')
+        kafka_p.send(TOPIC, item)
+        time.sleep(0.03)
 
-# while True:
-send_messages_kafka()
-    # time.sleep(60)
+if __name__=="__main__":
+    send_messages_kafka()
