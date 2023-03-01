@@ -10,6 +10,10 @@ volumes:
   druid_shared: {}
   app_mysql: {}
 
+networks:
+  my_network:
+    driver: bridge
+
 services:
 
   zookeeper:

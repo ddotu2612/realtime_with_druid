@@ -1,35 +1,12 @@
-# # Import KafkaConsumer from Kafka library
-# from kafka import KafkaConsumer
-
-# # Import sys module
-# import sys
-
-# # Define server with port
-# bootstrap_servers = ['localhost:29092']
-
-# # Define topic name from where the message will recieve
-# topicName = 'demo1'
-
-# # Initialize consumer variable
-# consumer = KafkaConsumer (topicName, bootstrap_servers =
-#    bootstrap_servers)
-
-# # Read and print message from consumer
-# for msg in consumer:
-#     print("Topic Name=%s,Message=%s"%(msg.topic,msg.value))
-
-# # Terminate the script
-# sys.exit()
-
-
+import requests
 import json
 
-f = open('IonXpress_081_HGVS_variant.json')
+url = 'http://localhost:8081/druid/indexer/v1/supervisor'
+headers = {'Content-Type': 'application/json'}
+with open('spec.json', 'r') as f:
+    payload = json.load(f)
 
-data = json.load(f)
+response = requests.post(url, headers=headers,  json=payload)
+# response = requests.post("http://localhost:8081/druid/indexer/v1/supervisor/datastock/terminate", headers=headers)
 
-for i in data:
-    print(i.*.)
-    # for j in i:
-    #     print(i[j]["hgvsg"])
-    break
+print(response.text)

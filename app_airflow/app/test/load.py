@@ -30,8 +30,8 @@ def crawler():
     print(len(codes)) # 1631 ticker
    
     # get historical stock data from start_date to end_date
-    now = datetime.now()
-    yes = datetime.now() - timedelta(days=1)
+    now = datetime.now() - timedelta(days=1)
+    yes = datetime.now() - timedelta(days=2)
     now_str = now.strftime("%Y-%m-%d")
     yes_str = yes.strftime("%Y-%m-%d")
     start_date =  yes_str
@@ -39,7 +39,7 @@ def crawler():
 
     print(f"Start crawl data in date {now_str}")
     list_df = []
-    for code in codes[311:500]:
+    for code in codes[501:800]:
         
         try:
             df = stock_historical_data(symbol=code, start_date=start_date, end_date=end_date)
