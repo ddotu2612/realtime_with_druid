@@ -7,3 +7,11 @@ B2: Run -> docker-compose rm -f && docker-compose build && docker-compose up
 | Druid Legacy Console  | http://localhost:8081/           | None                                          |
 | Superset              | http://localhost:8088/           | docker exec -it superset bash superset-init   |
 | Airflow               | http://localhost:3000/           | a-airflow/app/standalone_admin_password.txt   |
+
+# He thong alert
+cd > chat_bot
+python botTelte.py -> run chatbot
+python push_notification_bot.py -> run alert stock system
+
+# Danh gia hieu nang
+

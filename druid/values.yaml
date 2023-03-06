@@ -34,7 +34,7 @@ configVars:
   DRUID_USE_CONTAINER_IP: "true"
 
   ## Druid Common Configurations. ref: https://druid.apache.org/docs/latest/configuration/index.html#common-configurations
-  druid_extensions_loadList: '["druid-kafka-indexing-service", "druid-histogram", "druid-datasketches", "druid-lookups-cached-global", "postgresql-metadata-storage"]'
+  druid_extensions_loadList: '["druid-kafka-indexing-service", "prometheus-emitter", "druid-histogram", "druid-datasketches", "druid-lookups-cached-global", "postgresql-metadata-storage"]'
   druid_metadata_storage_type: postgresql
   druid_metadata_storage_connector_connectURI: jdbc:postgresql://postgres:5432/druid
   druid_metadata_storage_connector_user: druid
@@ -47,9 +47,12 @@ configVars:
   # druid_emitter: noop
   # druid_emitter_logging_logLevel: debug
   # druid_emitter_http_recipientBaseUrl: http://druid_exporter_url:druid_exporter_port/druid
-  druid.emitter: http
-  druid.emitter.logging.logLevel: debug
-  druid.emitter.http.recipientBaseUrl: http://druid-exporter-prometheus-druid-exporter.monitoring.svc.cluster.local:8080/druid
+  # druid.emitter: prometheus
+  # druid.emitter.prometheus.port: 9090
+  druid_emitter: http
+  druid_emitter_logging_logLevel: debug
+  druid_emitter_http_recipientBaseUrl: http://druid-exporter-prometheus-druid-exporter.monitoring.svc.cluster.local:8080/druid
+  druid_monitoring_monitors: '["org.apache.druid.java.util.metrics.SysMonitor", "org.apache.druid.java.util.metrics.JvmMonitor"]'
 
 gCloudStorage:
   enabled: false
@@ -71,7 +74,7 @@ broker:
     druid_processing_buffer_sizeBytes: '50000000'
     druid_processing_numMergeBuffers: 2
     druid_processing_numThreads: 1
-    # druid_monitoring_monitors: '["org.apache.druid.client.cache.CacheMonitor", "org.apache.druid.server.metrics.QueryCountStatsMonitor"]'
+    druid_monitoring_monitors: '["org.apache.druid.client.cache.CacheMonitor", "org.apache.druid.server.metrics.QueryCountStatsMonitor"]'
 
   ingress:
     enabled: false
@@ -86,13 +89,13 @@ broker:
     #    hosts:
     #      - chart-example.local
 
-  resources: {}
-    # limits:
-    #   cpu: 1
-    #   memory: 1Gi
-    # requests:
-    #   cpu: 250m
-    #   memory: 512Mi
+  resources: 
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
 
   nodeSelector: {}
 
@@ -114,7 +117,7 @@ coordinator:
   config:
     DRUID_XMX: 256m
     DRUID_XMS: 256m
-    # druid_monitoring_monitors: '["org.apache.druid.server.metrics.TaskCountStatsMonitor"]'
+    druid_monitoring_monitors: '["org.apache.druid.server.metrics.TaskCountStatsMonitor"]'
 
   ingress:
     enabled: false
@@ -129,13 +132,13 @@ coordinator:
     #    hosts:
     #      - chart-example.local
 
-  resources: {}
-    # limits:
-    #   cpu: 500m
-    #   memory: 1Gi
-    # requests:
-    #   cpu: 250m
-    #   memory: 512Mi
+  resources: 
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
 
   nodeSelector: {}
 
@@ -191,12 +194,12 @@ historical:
   config:
     DRUID_XMX: 512m
     DRUID_XMS: 512m
-    DRUID_MAXDIRECTMEMORYSIZE: 400m
+    DRUID_MAXDIRECTMEMORYSIZE: 1000m
     druid_processing_buffer_sizeBytes: '50000000'
     druid_processing_numMergeBuffers: 2
     druid_processing_numThreads: 1
-    # druid_monitoring_monitors: '["org.apache.druid.client.cache.CacheMonitor", "org.apache.druid.server.metrics.HistoricalMetricsMonitor", "org.apache.druid.server.metrics.QueryCountStatsMonitor"]'
-    # druid_segmentCache_locations: '[{"path":"/var/druid/segment-cache","maxSize":300000000000}]'
+    druid_monitoring_monitors: '["org.apache.druid.client.cache.CacheMonitor", "org.apache.druid.server.metrics.HistoricalMetricsMonitor", "org.apache.druid.server.metrics.QueryCountStatsMonitor"]'
+    # druid_segmentCache_locations: '[{"path": "/mnt/druidSegments", "maxSize": "10k", "freeSpacePercent": 1.0}]'
 
   ingress:
     enabled: false
@@ -228,13 +231,13 @@ historical:
 
   tolerations: []
 
-  resources: {}
-    # limits:
-    #   cpu: 2
-    #   memory: 2Gi
-    # requests:
-    #   cpu: 500m
-    #   memory: 512Mi
+  resources: 
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
 
   livenessProbeInitialDelaySeconds: 60
   readinessProbeInitialDelaySeconds: 60
@@ -251,8 +254,6 @@ historical:
     type: RollingUpdate
 
 middleManager:
-  ## If false, middleManager will not be installed
-  ##
   enabled: true
   name: middle-manager
   replicaCount: 1
@@ -266,7 +267,7 @@ middleManager:
     druid_indexer_fork_property_druid_processing_buffer_sizeBytes: '25000000'
 
   autoscaling:
-    enabled: false
+    enabled: true
     minReplicas: 2
     maxReplicas: 5
     metrics:
@@ -313,13 +314,13 @@ middleManager:
 
   tolerations: []
 
-  resources: {}
-    # limits:
-    #   cpu: 500m
-    #   memory: 1Gi
-    # requests:
-    #   cpu: 250m
-    #   memory: 256Mi
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 256Mi
 
   ## (dict) If specified, apply these annotations to each master Pod
   podAnnotations: {}
@@ -421,10 +422,10 @@ postgresql:
     port: 5432
 
 # Secrets
-prometheus:
-  enabled: false
-  #pick the any port what you want
-  port: 9090
-  annotation:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "9090"
+# prometheus:
+#   enabled: false
+#   #pick the any port what you want
+#   port: 9090
+#   annotation:
+#     prometheus.io/scrape: "true"
+#     prometheus.io/port: "9090"

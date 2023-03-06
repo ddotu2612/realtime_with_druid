@@ -32,81 +32,116 @@ class SendAlert():
             )
             if connection.is_connected():
                 self.connection = connection
-                logging.info(connection.get_server_info())
+                print(connection.get_server_info())
                 self.cursor = connection.cursor()
                 self.cursor.execute("select database();")
                 record = self.cursor.fetchone()
-                logging.info(f"You're connected to database: {record}")
+                print(f"connected to database: {record}")
 
         except Error as e:
-            logging.error("Error while connecting to MySQL:\n" + e)
+            print("Error while connecting to MySQL:\n" + e)
 
         self.r = redis.Redis()
+        print("connected to redis")
         self.curs = connect(host='localhost', port=8082, path='/druid/v2/sql/', scheme='http').cursor()
         self.bot = telegram.Bot(token=configs.TOKEN)
 
 
     async def read_data(self):
-        query_stock_sql = """select * from datastock where TradingDate = '2023-01-27'"""
+        
+        query_stock_sql = """select * from datastock where __time = TIMESTAMP '2023-02-28 00:00:00'"""
         df = pd.DataFrame(self.curs.execute(query_stock_sql))
         res_close = df[["ticker", "Close"]].values
-        res_volume = df[["ticker", "Close"]].values
-        print(res_close)                
-        await self.processMessages(res_close, "PRICE")
+        res_volume = df[["ticker", "Volume"]].values
+        # print(res_close)
+        # print(res_volume)
+        while 1:
+            await self.processMessages(res_close, "PRICE")
+            await self.processMessages(res_volume, "VOLUME")
+            await asyncio.sleep(10)
 
     async def processMessages(self, messages, topic):
         print(len(messages))
         for message in messages:
             ticker, cur = message
-            print(ticker, cur)
-            # print(f'alert:{topic.upper()}:{ticker}:gt')
-            # prev = self.r.get(f"{topic}:{ticker}")
-
-            # if prev is None:
-            #     self.r.set(f"{topic}:{ticker}", cur)
-            #     return
-
-            # if ticker == 'ACB' and topic == 'price':
-            #     print(cur)
-
-            # prev = float(prev)
-            alert_chat_ids_lt = self.r.zrangebyscore(f"alert:{topic.upper()}:{ticker}:lt", cur, '+inf')
-            print(alert_chat_ids_lt)
+            # # if ticker == 'APF':
+            # print (ticker, cur)
+            alert_chat_ids_lt = self.r.zrangebyscore(f"{topic.upper()}:{ticker}:lt", cur, '+inf')
+            
             if len(alert_chat_ids_lt) > 0:
-                await self.send_alerts(alert_chat_ids_lt, ticker, topic, cur, 0)
-            alert_chat_ids_gt = self.r.zrangebyscore(f"alert:{topic.upper()}:{ticker}:gt", 0, cur)
-            print(alert_chat_ids_gt)
+                print(alert_chat_ids_lt)
+                await self.send_alerts(alert_chat_ids_lt, ticker, cur, topic, 0)
+            alert_chat_ids_gt = self.r.zrangebyscore(f"{topic.upper()}:{ticker}:gt", 0, cur)
+            
             if len(alert_chat_ids_gt) > 0:
+                print(alert_chat_ids_gt)
                 await self.send_alerts(alert_chat_ids_gt, ticker, cur, topic, 1)
-            if ticker == 'ABC':
-                break
+            # if ticker == 'ABC':
+            #     break
             # self.r.set(f"{topic}:{ticker}", cur)
 
 
     async def send_alerts(self, chat_ids, ticker, cur_value, indicator, direction):
+        # print(chat_ids, ticker, cur_value, indicator, direction)
+        # print('haha')
         if direction == 0:
             msg = configs.LT_MESSAGE
         else:
             msg = configs.GT_MESSAGE
         print('chat_ids', chat_ids)
-        for chat_id in chat_ids:
-            select_query = "SELECT threshold FROM stockalert WHERE chat_id = %s and ticker = %s and indicator = %s and direction = %s"
-            self.cursor.execute(select_query, (chat_id.decode('utf-8'), ticker, indicator, direction))
-            row = self.cursor.fetchone()
-            if row is None:
-                continue
-            # print(row)
-            threshold = row[0]
-            # print(threading)
-            percent = round(abs(threshold - cur_value) * 100 / threshold, 2)
-            text_msg = msg.format(ticker, indicator, percent, cur_value)
-            print(text_msg)
-            print(type(chat_id), chat_id)
-            await self.bot.send_message(chat_id=chat_id.decode('utf-8'), text=text_msg)
+        if direction == 0:
+            for chat_id in chat_ids:
+                if chat_id.decode('utf-8') == '1': continue
+                threshold = self.r.get(f"{indicator}:{ticker}:{chat_id.decode('utf-8')}:lt:cur")
+                threshold = float(threshold)
+
+                prev_lt = self.r.get(f"{indicator}:{ticker}:{chat_id.decode('utf-8')}:lt:prev")
+                print(prev_lt)
+                    
+                if prev_lt is None:
+                    self.r.set(f"{indicator}:{ticker}:{chat_id.decode('utf-8')}:lt:prev", threshold)
+                    
+                    percent = round(abs(threshold - cur_value) * 100 / threshold, 2)
+                    text_msg = msg.format(ticker, indicator, percent, cur_value)
+                    await self.bot.send_message(chat_id=chat_id.decode('utf-8'), text=text_msg)
+                else:
+                    prev_lt = float(prev_lt)
+                    print("prev: ", prev_lt, " threshold: ", threshold)
+                    if (prev_lt != threshold):
+                        self.r.set(f"{indicator}:{ticker}:{chat_id.decode('utf-8')}:lt:prev", threshold)
+
+                        percent = round(abs(threshold - cur_value) * 100 / threshold, 2)
+                        text_msg = msg.format(ticker, indicator, percent, cur_value)
+                        await self.bot.send_message(chat_id=chat_id.decode('utf-8'), text=text_msg)
+
+        else:
+            for chat_id in chat_ids:
+                if chat_id.decode('utf-8') == '1': continue
+                threshold = self.r.get(f"{indicator}:{ticker}:{chat_id.decode('utf-8')}:gt:cur")
+                threshold = float(threshold)
+                prev_gt = self.r.get(f"{indicator}:{ticker}:{chat_id.decode('utf-8')}:gt:prev")
+                print(prev_gt)
+                if prev_gt is None:
+                    self.r.set(f"{indicator}:{ticker}:{chat_id.decode('utf-8')}:gt:prev", threshold)
+                    percent = round(abs(threshold - cur_value) * 100 / threshold, 2)
+                    text_msg = msg.format(ticker, indicator, percent, cur_value)
+                    await self.bot.send_message(chat_id=chat_id.decode('utf-8'), text=text_msg)
+                else:
+                    prev_gt = float(prev_gt)
+                    print("prev: ", prev_gt, " threshold: ", threshold)
+                    if (prev_gt != threshold):
+                        self.r.set(f"{indicator}:{ticker}:{chat_id.decode('utf-8')}:gt:prev", threshold)
+
+                        percent = round(abs(threshold - cur_value) * 100 / threshold, 2)
+                        text_msg = msg.format(ticker, indicator, percent, cur_value)
+                        await self.bot.send_message(chat_id=chat_id.decode('utf-8'), text=text_msg)
 
     def __del__(self):
         self.r.quit()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     bot = SendAlert()
-    asyncio.run(bot.read_data())
+    loop = asyncio.get_event_loop()
+    # loop.create_task(bot.read_data())
+    loop.run_until_complete(bot.read_data())
+        

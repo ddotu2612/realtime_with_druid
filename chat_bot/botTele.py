@@ -111,9 +111,11 @@ class Bot():
         for condition in conditions:
             (chat_id, ticker, indicator, threshold, direction) = condition
             if direction == 0:
-                self.r.zadd(f'alert:{indicator.upper()}:{ticker}:lt', {chat_id : threshold})
+                self.r.zadd(f'{indicator.upper()}:{ticker}:lt', {chat_id : threshold})
+                self.r.set(f"{indicator}:{ticker}:{chat_id}:lt:cur", threshold)
             else:
-                self.r.zadd(f'alert:{indicator.upper()}:{ticker}:gt', {chat_id : threshold})
+                self.r.zadd(f'{indicator.upper()}:{ticker}:gt', {chat_id : threshold})
+                self.r.set(f"{indicator}:{ticker}:{chat_id}:gt:cur", threshold)
 
         
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -229,8 +231,10 @@ class Bot():
             self.connection.commit()
             if direction == 1:
                 self.r.zadd(f"{indicator}:{ticker}:gt", {chat_id: threshold})
+                self.r.set(f"{indicator}:{ticker}:{chat_id}:gt:cur", threshold)
             else:
                 self.r.zadd(f"{indicator}:{ticker}:lt", {chat_id: threshold})
+                self.r.set(f"{indicator}:{ticker}:{chat_id}:lt:cur", threshold)
             message = "Thêm cảnh báo thành công. Sử dụng /list để xem tất cả cảnh báo"
             logging.info(f"Người dùng thêm điều kiện tại {chat_id}: Thành công -- Chi tiết: {ticker} - {indicator} - {configs.DIRECTION_BUTTON[0][direction]} - {threshold}")
             await context.bot.send_message(chat_id=chat_id, text=message)
@@ -360,9 +364,13 @@ class Bot():
             if direction == 1:
                 self.r.zrem(f"{indicator}:{ticker}:gt", chat_id)
                 self.r.zadd(f"{indicator}:{ticker}:gt", {chat_id: threshold})
+                self.r.delete(f"{indicator}:{ticker}:{chat_id}:gt:cur")
+                self.r.set(f"{indicator}:{ticker}:{chat_id}:gt:cur", threshold)
             else:
                 self.r.zrem(f"{indicator}:{ticker}:lt", chat_id)
                 self.r.zadd(f"{indicator}:{ticker}:lt", {chat_id: threshold})
+                self.r.delete(f"{indicator}:{ticker}:{chat_id}:lt:cur")
+                self.r.set(f"{indicator}:{ticker}:{chat_id}:lt:cur", threshold)
             message = "Cập nhật thành công! Sử dụng /list để xem tất cả cảnh báo của bạn"
             logging.info(f"Người dùng cập nhật điều kiện vs chat_id {chat_id}: Thành công -- Detail: {ticker} - {indicator} - {configs.DIRECTION_BUTTON[0][direction]} - {threshold}")
             await context.bot.send_message(chat_id=chat_id, text=message)
@@ -489,8 +497,10 @@ class Bot():
             logging.info(f"Người dùng xóa điều kiện có char_id {str(update.effective_chat.id)}: thành công -- Chi tiết: {ticker} - {indicator} - {configs.DIRECTION_BUTTON[0][direction]}")
             if direction == 1:
                 self.r.zrem(f"{indicator}:{ticker}:gt", update.effective_chat.id)
+                self.r.delete(f"{indicator}:{ticker}:{str(update.effective_chat.id)}:gt:cur")
             else:
                 self.r.zrem(f"{indicator}:{ticker}:lt", update.effective_chat.id)
+                self.r.delete(f"{indicator}:{ticker}:{str(update.effective_chat.id)}:lt:cur")
             await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
             return END_CONVERSATION
 

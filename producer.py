@@ -8,18 +8,18 @@ import numpy as np
 
 from vnstock import *
 
-# KAFKA_HOST_IP="localhost"
-# TOPIC = 'test1'
+KAFKA_HOST_IP="localhost"
+TOPIC = 'test1'
 
-# # Messages will be serialized as JSON 
-# def serializer(message):
-#     return json.dumps(message).encode('utf-8')
+# Messages will be serialized as JSON 
+def serializer(message):
+    return json.dumps(message).encode('utf-8')
 
-# kafka_p = KafkaProducer(
-#     # bootstrap_servers = [f'{KAFKA_HOST_IP}:9094'], 
-#     bootstrap_servers = [f'{KAFKA_HOST_IP}:9092'], # connect kafka in k8s   
-#     value_serializer=serializer
-# )
+kafka_p = KafkaProducer(
+    # bootstrap_servers = [f'{KAFKA_HOST_IP}:9094'], 
+    bootstrap_servers = [f'34.30.144.238:9092'], # connect kafka in k8s   
+    value_serializer=serializer
+)
 
 # crawler historical data in current day
 def crawler():
@@ -37,7 +37,7 @@ def crawler():
 
     print(f"Start crawl data in date {now_str}")
     list_df = []
-    for code in codes[311:500]:
+    for code in codes[0:100]:
         try:
             df = stock_historical_data(symbol=code, start_date=start_date, end_date=end_date)
         except:

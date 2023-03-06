@@ -2,15 +2,15 @@ from vnstock import *
 import pandas as pd
 import numpy as np
 
-# print(listing_companies())
-x = listing_companies()['ticker'].tolist()
-x.sort()
+print(listing_companies())
+# x = listing_companies()['ticker'].tolist()
+# x.sort()
 
-for i, item in enumerate(x):
-    if (i + 1) % 10:
-        print(f'{item}, ', end='')
-    else:
-        print(f'{item}, \n')
+# for i, item in enumerate(x):
+#     if (i + 1) % 10:
+#         print(f'{item}, ', end='')
+#     else:
+#         print(f'{item}, \n')
 # ['24H', 'AAA', 'AAM']
 
 # try:

@@ -12,7 +12,7 @@ import os
 load_dotenv()
 KAFKA_BOOTSTRAP_SERVER = os.getenv('KAFKA_BOOTSTRAP_SERVER')
 # KAFKA_HOST_IP=   
-TOPIC = 'data'
+TOPIC = 'datastock'
 kafka_servers = [KAFKA_BOOTSTRAP_SERVER]
 
 # Messages will be serialized as JSON 
@@ -32,8 +32,8 @@ def crawler():
     print(len(codes)) # 1631 ticker
    
     # get historical stock data from start_date to end_date
-    now = datetime.now()
-    yes = datetime.now() - timedelta(days=1)
+    now = datetime.now() - timedelta(days=1)
+    yes = datetime.now() - timedelta(days=2)
     now_str = now.strftime("%Y-%m-%d")
     yes_str = yes.strftime("%Y-%m-%d")
     start_date =  yes_str
@@ -41,7 +41,7 @@ def crawler():
 
     print(f"Start crawl data in date {now_str}")
     list_df = []
-    for code in codes[0:10]:
+    for code in codes:
         
         try:
             df = stock_historical_data(symbol=code, start_date=start_date, end_date=end_date)
@@ -79,7 +79,7 @@ def generate_message():
 def send_messages_kafka():
     dummy_message = generate_message()
     print(type(dummy_message))
-    for item in dummy_message[0:10]:
+    for item in dummy_message[0:-1]:
         print(item)
         item = json.loads(item)
         # print(item)

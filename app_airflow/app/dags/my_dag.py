@@ -5,13 +5,13 @@ from airflow.utils import timezone
 
 ######################### Config DAG
 default_args = {'owner': 'airflow',
-                'start_date': timezone.datetime(2023, 2, 28, 16, 30),
+                'start_date': timezone.datetime(2023, 2, 28),
                 }
 
 dag = DAG("trigger_producer",
             schedule_interval='30 16 * * *',
             default_args=default_args,
-            is_paused_upon_creation=False, ## Dag auto active
+            is_paused_upon_creation=True, ## Dag auto active
             )
 
 

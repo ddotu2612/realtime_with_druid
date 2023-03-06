@@ -1,60 +1,60 @@
 {
-    "type": "kafka",
-    "spec": {
-      "ioConfig": {
-        "type": "kafka",
-        "consumerProperties": {
-          "bootstrap.servers": "kafka:9092"
-        },
-        "topic": "datastock",
-        "inputFormat": {
-          "type": "json"
-        },
-        "useEarliestOffset": false
+  "type": "kafka",
+  "spec": {
+    "ioConfig": {
+      "type": "kafka",
+      "consumerProperties": {
+        "bootstrap.servers": "kafka:9092"
       },
-      "tuningConfig": {
-        "type": "kafka"
+      "topic": "datastock",
+      "inputFormat": {
+        "type": "json"
       },
-      "dataSchema": {
-        "dataSource": "datastock",
-        "timestampSpec": {
-          "column": "timestamp",
-          "format": "posix"
-        },
-        "dimensionsSpec": {
-          "dimensions": [
-            "ticker",
-            {
-              "type": "long",
-              "name": "TradingDate"
-            },
-            {
-              "type": "long",
-              "name": "Open"
-            },
-            {
-              "type": "long",
-              "name": "High"
-            },
-            {
-              "type": "long",
-              "name": "Low"
-            },
-            {
-              "type": "long",
-              "name": "Close"
-            },
-            {
-              "type": "long",
-              "name": "Volume"
-            }
-          ]
-        },
-        "granularitySpec": {
-          "queryGranularity": "none",
-          "rollup": false,
-          "segmentGranularity": "day"
-        }
+      "useEarliestOffset": false
+    },
+    "tuningConfig": {
+      "type": "kafka"
+    },
+    "dataSchema": {
+      "dataSource": "datastock",
+      "timestampSpec": {
+        "column": "timestamp",
+        "format": "posix"
+      },
+      "dimensionsSpec": {
+        "dimensions": [
+          "ticker",
+          {
+            "type": "long",
+            "name": "TradingDate"
+          },
+          {
+            "type": "long",
+            "name": "Open"
+          },
+          {
+            "type": "long",
+            "name": "High"
+          },
+          {
+            "type": "long",
+            "name": "Low"
+          },
+          {
+            "type": "long",
+            "name": "Close"
+          },
+          {
+            "type": "long",
+            "name": "Volume"
+          }
+        ]
+      },
+      "granularitySpec": {
+        "queryGranularity": "none",
+        "rollup": false,
+        "segmentGranularity": "day"
       }
     }
   }
+}
