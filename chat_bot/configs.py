@@ -9,7 +9,7 @@ TYPE_LIST = ['PRICE_UPPER', 'PRICE_LOWER']
 # Message
 UNSUPPORTED_CONDITION_MSG = "Điều kiện không được hỗ trợ: " 
 UNSUPPORTED_TICKER_MSG = "Mã chứng khoán không được hỗ trợ: "
-NEGATIVE_THRESHOLD_MSG = "Ngưỡng không âm mà? Bạn nhập số dương dùm"
+NEGATIVE_THRESHOLD_MSG = "Hãy nhập số dương"
 WELCOME_MESSAGE = """
 Welcome to tudvFDP.
 

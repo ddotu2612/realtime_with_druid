@@ -8,18 +8,18 @@ import numpy as np
 
 from vnstock import *
 
-KAFKA_HOST_IP="localhost"
-TOPIC = 'test1'
+# KAFKA_HOST_IP="localhost"
+# TOPIC = 'test1'
 
-# Messages will be serialized as JSON 
-def serializer(message):
-    return json.dumps(message).encode('utf-8')
+# # Messages will be serialized as JSON 
+# def serializer(message):
+#     return json.dumps(message).encode('utf-8')
 
-kafka_p = KafkaProducer(
-    # bootstrap_servers = [f'{KAFKA_HOST_IP}:9094'], 
-    bootstrap_servers = [f'34.30.144.238:9092'], # connect kafka in k8s   
-    value_serializer=serializer
-)
+# kafka_p = KafkaProducer(
+#     # bootstrap_servers = [f'{KAFKA_HOST_IP}:9094'], 
+#     bootstrap_servers = [f'34.30.144.238:9092'], # connect kafka in k8s   
+#     value_serializer=serializer
+# )
 
 # crawler historical data in current day
 def crawler():
@@ -37,7 +37,7 @@ def crawler():
 
     print(f"Start crawl data in date {now_str}")
     list_df = []
-    for code in codes[0:100]:
+    for code in codes[0:10]:
         try:
             df = stock_historical_data(symbol=code, start_date=start_date, end_date=end_date)
         except:
@@ -55,34 +55,35 @@ def crawler():
 
     return df_all
 
-# crawler()
+# print(crawler())
 
-# # create message to send to Kafka
+# create message to send to Kafka
 def generate_message():
     df = crawler() # dataframe store historical data in current day
     # df = pd.read_csv(r'D:\DE\realtime_with_druid\crawl\stock_crawl_new_full.csv')
-
-    df['timestamp'] = pd.to_datetime(df['TradingDate'],format= '%Y-%m-%d').values.astype(np.int64) // 10 ** 9
+    df.columns = ['ticker', 'time', 'open', 'high', 'low', 'close', 'volume']
+    # df['timestamp'] = pd.to_datetime(df['TradingDate'],format= '%Y-%m-%d').values.astype(np.int64) // 10 ** 9
     # df['date_convert'] = [datetime.fromtimestamp(x) for x in df['timestamp']]
     # lis = df.values.tolist()
+    print(df)
     out = df.to_json(orient='records', lines=True).split('\n')
     # print(df)
     # print(out)
     return out
+generate_message()
+# def send_messages_kafka():
+#     dummy_message = generate_message()
+#     # print(dumm)
+#     print(len(dummy_message))
+#     for item in dummy_message:
+#         print(item)
+#         item = json.loads(item)
+#         print(item)
+#         # Send it to our 'messages' topic
+#         # print(f'Producing message @ {datetime.now()} | Message = {str(item)}')
+#         # kafka_p.send(TOPIC, item)
+#         # time.sleep(0.03)
 
-def send_messages_kafka():
-    dummy_message = generate_message()
-    # print(dumm)
-    print(len(dummy_message))
-    for item in dummy_message:
-        print(item)
-        item = json.loads(item)
-        print(item)
-        # Send it to our 'messages' topic
-        # print(f'Producing message @ {datetime.now()} | Message = {str(item)}')
-        # kafka_p.send(TOPIC, item)
-        # time.sleep(0.03)
-
-# while True:
-send_messages_kafka()
+# # while True:
+# send_messages_kafka()
     # time.sleep(60)

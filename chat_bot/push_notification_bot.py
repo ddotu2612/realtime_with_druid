@@ -49,7 +49,7 @@ class SendAlert():
 
     async def read_data(self):
         
-        query_stock_sql = """select * from datastock where __time = TIMESTAMP '2023-02-28 00:00:00'"""
+        query_stock_sql = """select * from datastock where __time = TIMESTAMP '2023-03-07 00:00:00'"""
         df = pd.DataFrame(self.curs.execute(query_stock_sql))
         res_close = df[["ticker", "Close"]].values
         res_volume = df[["ticker", "Volume"]].values

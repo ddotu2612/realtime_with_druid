@@ -32,8 +32,8 @@ def crawler():
     print(len(codes)) # 1631 ticker
    
     # get historical stock data from start_date to end_date
-    now = datetime.now() - timedelta(days=1)
-    yes = datetime.now() - timedelta(days=2)
+    now = datetime.now()
+    yes = datetime.now() - timedelta(days=1)
     now_str = now.strftime("%Y-%m-%d")
     yes_str = yes.strftime("%Y-%m-%d")
     start_date =  yes_str
@@ -67,8 +67,8 @@ def crawler():
 def generate_message():
     df = crawler() # dataframe store historical data in current day
     # df = pd.read_csv(r'D:\DE\realtime_with_druid\crawl\stock_crawl_new_full.csv')
-
-    df['timestamp'] = pd.to_datetime(df['TradingDate'],format= '%Y-%m-%d').values.astype(np.int64) // 10 ** 9
+    df.columns = ['ticker', 'time', 'open', 'high', 'low', 'close', 'volume']
+    # df['timestamp'] = pd.to_datetime(df['TradingDate'],format= '%Y-%m-%d').values.astype(np.int64) // 10 ** 9
     # df['date_convert'] = [datetime.fromtimestamp(x) for x in df['timestamp']]
     # lis = df.values.tolist()
     out = df.to_json(orient='records', lines=True).split('\n')

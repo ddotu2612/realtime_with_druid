@@ -5,7 +5,7 @@ from airflow.utils import timezone
 
 ######################### Config DAG
 default_args = {'owner': 'airflow',
-                'start_date': timezone.datetime(2023, 2, 28),
+                'start_date': timezone.datetime(2023, 3, 8),
                 }
 
 dag = DAG("trigger_producer",

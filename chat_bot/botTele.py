@@ -2,7 +2,7 @@ import mysql.connector
 from mysql.connector import Error
 import configs
 import logging
-from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
+from telegram import  ReplyKeyboardMarkup, Update
 from telegram.ext import *
 import redis
 import re
