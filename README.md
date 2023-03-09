@@ -27,21 +27,21 @@ B3: Druid Operator install <br>
     helm -n druid-operator install cluster-druid-operator ./chart <br>
     
 B4: Installing Kube Prometheus Stack <br>
-    kubectl create ns monitoring
-    helm -n monitoring install kube-prometheus-stack prometheus-community/kube-prometheus-stack
-    Để forward Prometheus: kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
-    Để forward Grafana: kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 8080:80
+    kubectl create ns monitoring <br>
+    helm -n monitoring install kube-prometheus-stack prometheus-community/kube-prometheus-stack <br>
+    Để forward Prometheus: kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090 <br>
+    Để forward Grafana: kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 8080:80 <br>
 
-B5: Running Druid Exporter
-    git clone https://github.com/opstree/druid-exporter.git
-    cd druid-exporter/
-    helm -n monitoring install druid-exporter ./helm/ --set druidURL="http://druid-router.druid.svc.cluster.local:8888" --set druidExporterPort="8080" --set logLevel="debug" --set logFormat="text" --set serviceMonitor.enabled=true --set serviceMonitor.namespace="monitoring"
+B5: Running Druid Exporter <br>
+    git clone https://github.com/opstree/druid-exporter.git <br>
+    cd druid-exporter/ <br>
+    helm -n monitoring install druid-exporter ./helm/ --set druidURL="http://druid-router.druid.svc.cluster.local:8888" --set druidExporterPort="8080" --set logLevel="debug" --set logFormat="text" --set serviceMonitor.enabled=true --set serviceMonitor.namespace="monitoring" <br>
 
-B6: Chạy chương trình producer kafka in K8s
-    cd app
-    kubectl apply -f pod.yaml
-B6: Xem dịch vụ và giá trị metric:
-    sum(druid_emitted_metrics) by (exported_service, metric_name) trên localhost:9090 của Prometheus
+B6: Chạy chương trình producer kafka in K8s <br>
+    cd > app <br>
+    kubectl apply -f pod.yaml <br>
+B6: Xem dịch vụ và giá trị metric: <br>
+    sum(druid_emitted_metrics) by (exported_service, metric_name) trên localhost:9090 của Prometheus <br>
 
 
 
