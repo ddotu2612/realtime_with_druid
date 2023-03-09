@@ -1,6 +1,6 @@
-# realtime_with_druid
-B1: Clone
-B2: Run -> docker-compose rm -f && docker-compose build && docker-compose up
+# realtime_with_druid 
+B1: Clone <br>
+B2: Run -> docker-compose rm -f && docker-compose build && docker-compose up <br>
 | Service               | URL                              | User/Password                                 |
 | :-------------------: | :------------------------------: | :-------------------------------------------: |
 | Druid Unified Console | http://localhost:8888/           | None                                          |
@@ -9,9 +9,44 @@ B2: Run -> docker-compose rm -f && docker-compose build && docker-compose up
 | Airflow               | http://localhost:3000/           | a-airflow/app/standalone_admin_password.txt   |
 
 # He thong alert
-cd > chat_bot
-python botTelte.py -> run chatbot
-python push_notification_bot.py -> run alert stock system
+B1: cd > chat_bot <br>
+B2: python botTelte.py -> run chatbot <br>
+B3: python push_notification_bot.py -> run alert stock system <br>
 
 # Danh gia hieu nang
+B1: cd > druid <br>
+    helm install druid . --namespace druid --create-namespace -> Tạo một cụm druid từ file values.yaml <br>
+    Để update: thay install -> upgrade <br>
+    Để forward druid: kubectl port-forward service/druid-router 8888:8888 -n druid <br>
+B2: cd > kafka <br>
+    helm install kafka bitnami/kafka --values=./kafka-values.yaml <br>
+B3: Druid Operator install <br>
+    kubectl create namespace druid-operator <br>
+    git clone https://github.com/druid-io/druid-operator.git <br>
+    cd druid-operator/ <br>
+    helm -n druid-operator install cluster-druid-operator ./chart <br>
+    
+B4: Installing Kube Prometheus Stack <br>
+    kubectl create ns monitoring
+    helm -n monitoring install kube-prometheus-stack prometheus-community/kube-prometheus-stack
+    Để forward Prometheus: kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
+    Để forward Grafana: kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 8080:80
+
+B5: Running Druid Exporter
+    git clone https://github.com/opstree/druid-exporter.git
+    cd druid-exporter/
+    helm -n monitoring install druid-exporter ./helm/ --set druidURL="http://druid-router.druid.svc.cluster.local:8888" --set druidExporterPort="8080" --set logLevel="debug" --set logFormat="text" --set serviceMonitor.enabled=true --set serviceMonitor.namespace="monitoring"
+
+B6: Chạy chương trình producer kafka in K8s
+    cd app
+    kubectl apply -f pod.yaml
+B6: Xem dịch vụ và giá trị metric:
+    sum(druid_emitted_metrics) by (exported_service, metric_name) trên localhost:9090 của Prometheus
+
+
+
+
+    
+    
+
 
